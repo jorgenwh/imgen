@@ -9,3 +9,6 @@ dependencies = [
     "torchvision",
     "tqdm",
 ]
+
+[tool.setuptools.packages.find]
+include = ["imgen*"]

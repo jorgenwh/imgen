@@ -6,28 +6,33 @@ from tqdm import tqdm
 from imgen.data.datasets import get_mnist_dataloader
 from imgen.models.gan import Discriminator, Generator, weights_init
 
-NOISE_DIM = 100
-NUM_CHANNELS = 1
-WIDTH = 28
-HEIGHT = 28
 
-def train_gan():
-    dataloader = get_mnist_dataloader(batch_size=64, data_dir="./data")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def train_gan(
+        noise_dim: int,
+        num_channels: int,
+        width: int,
+        height: int,
+        learning_rate: float,
+        epochs: int,
+        batch_size: int,
+        device: torch.device,
+        output_dir: str
+):
+    dataloader = get_mnist_dataloader(batch_size=batch_size, data_dir="./data")
 
-    discriminator = Discriminator(NUM_CHANNELS, WIDTH, HEIGHT).to(device)
-    generator = Generator(NOISE_DIM, NUM_CHANNELS, WIDTH, HEIGHT).to(device)
+    discriminator = Discriminator(num_channels, width, height).to(device)
+    generator = Generator(noise_dim, num_channels, width, height).to(device)
 
     # Apply DCGAN weight initialization
     discriminator.apply(weights_init)
     generator.apply(weights_init)
 
-    optimizer_d = optim.Adam(discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-    optimizer_g = optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+    optimizer_d = optim.Adam(discriminator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    optimizer_g = optim.Adam(generator.parameters(), lr=learning_rate, betas=(0.5, 0.999))
     criterion = nn.BCELoss()
 
-    for epoch in range(10):
-        print("Epoch: " + str(epoch + 1))
+    for epoch in range(epochs):
+        print("Epoch: " + str(epoch + 1) + "/" + str(epochs))
         bar = tqdm(dataloader, desc="Training", unit="batch", bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} - {unit}")
         for real_images, _ in bar:
             real_images = real_images.to(device)
@@ -36,7 +41,7 @@ def train_gan():
             d_out_real = discriminator(real_images)
             real_labels = torch.ones_like(d_out_real)
 
-            noise = torch.randn(real_images.size(0), NOISE_DIM).to(device)
+            noise = torch.randn(real_images.size(0), noise_dim).to(device)
             fake_images = generator(noise)
             d_out_fake = discriminator(fake_images.detach()) # Detach to avoid training G on these labels
             fake_labels = torch.zeros_like(d_out_fake)
@@ -59,4 +64,4 @@ def train_gan():
 
             bar.unit = f"D Loss: {d_loss.item():.4f}, G Loss: {g_loss.item():.4f}"
 
-        torch.save(generator.state_dict(), f"models/generator_epoch_{epoch + 1}.pth")
+        torch.save(generator.state_dict(), f"{output_dir}/generator_epoch_{epoch + 1}.pth")
