@@ -2,28 +2,28 @@ import os
 import torch
 import argparse
 
-from imgen.training.gan import train_gan
+from imgen.training.diffusion import train_dit
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Sample GAN Generator")
+    parser = argparse.ArgumentParser(description="Train DiT diffusion model")
 
     parser.add_argument(
-        "-noise_dim",
+        "-timesteps",
         type=int,
-        default=128,
-        help="Dimensionality of the noise vector input to the generator",
+        default=1000,
+        help="Number of diffusion timesteps",
     )
     parser.add_argument(
         "-learning_rate",
         type=float,
-        default=0.0002,
-        help="Learning rate for both the generator and discriminator optimizers",
+        default=0.001,
+        help="Learning rate for optimizer",
     )
     parser.add_argument(
         "-epochs",
         type=int,
-        default=5,
+        default=10,
         help="Number of training epochs",
     )
     parser.add_argument(
@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
         "-output_dir",
         type=str,
         default="./models",
-        help="Directory to save generator model checkpoints",
+        help="Directory to save model checkpoints",
     )
 
     return parser.parse_args()
@@ -52,13 +52,13 @@ def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
-    train_gan(
-        noise_dim=args.noise_dim,
+    train_dit(
+        timesteps=args.timesteps,
         learning_rate=args.learning_rate,
         epochs=args.epochs,
         batch_size=args.batch_size,
         device=torch.device(args.device),
-        output_dir=args.output_dir
+        output_dir=args.output_dir,
     )
 
 
