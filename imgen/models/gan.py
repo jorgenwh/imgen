@@ -3,16 +3,12 @@ import torch.nn as nn
 
 
 class Discriminator(nn.Module):
-    def __init__(self, num_channels: int, width: int, height: int):
+    def __init__(self):
         super(Discriminator, self).__init__()
 
-        # Each conv with stride=2, kernel=4, padding=1 halves the spatial size
-        final_width = width // 4
-        final_height = height // 4
-
-        self.main = nn.Sequential(
+        self.image_head = nn.Sequential(
             # 28x28 -> 14x14
-            nn.Conv2d(num_channels, 64, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(1, 64, kernel_size=4, stride=2, padding=1),
             nn.LeakyReLU(0.2),
 
             # 14x14 -> 7x7
@@ -21,26 +17,34 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2),
 
             nn.Flatten(),
-            nn.Linear(128 * final_width * final_height, 1),
+        )
+        self.label_head = nn.Sequential(
+            nn.Linear(10, 128),
+            nn.LeakyReLU(0.2),
+        )
+        self.body = nn.Sequential(
+            nn.Linear(128 * 7 * 7 + 128, 256),
+            nn.LeakyReLU(0.2),
+            nn.Linear(256, 1),
             nn.Sigmoid(),
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.main(x)
+    def forward(self, image: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+        image_features = self.image_head(image)
+        label_features = self.label_head(label)
+        combined = torch.cat([image_features, label_features], dim=1)
+        return self.body(combined)
 
 
 class Generator(nn.Module):
-    def __init__(self, noise_dim: int, num_channels: int, width: int, height: int):
+    def __init__(self, noise_dim: int):
         super(Generator, self).__init__()
 
-        # Start at 1/4 of target size, upsample twice with stride=2
-        self.start_width = width // 4
-        self.start_height = height // 4
-
-        self.main = nn.Sequential(
-            nn.Linear(noise_dim, 256 * self.start_width * self.start_height),
+        self.body = nn.Sequential(
+            nn.Linear(noise_dim, 256 * 7 * 7),
+            nn.BatchNorm1d(256 * 7 * 7),
             nn.ReLU(),
-            nn.Unflatten(1, (256, self.start_height, self.start_width)),
+            nn.Unflatten(1, (256, 7, 7)),
 
             # 7x7 -> 14x14
             nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
@@ -48,12 +52,12 @@ class Generator(nn.Module):
             nn.ReLU(),
 
             # 14x14 -> 28x28
-            nn.ConvTranspose2d(128, num_channels, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 1, kernel_size=4, stride=2, padding=1),
             nn.Tanh(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.main(x)
+        return self.body(x)
 
 
 def weights_init(m):

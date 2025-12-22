@@ -1,5 +1,6 @@
 import os
 import torch
+import torch.nn.functional as F
 import argparse
 from torchvision.utils import save_image
 
@@ -22,30 +23,6 @@ def parse_args() -> argparse.Namespace:
         help="Dimensionality of the noise vector input to the generator",
     )
     parser.add_argument(
-        "-num_channels",
-        type=int,
-        default=1,
-        help="Number of channels in the generated images (1 for grayscale, 3 for RGB)",
-    )
-    parser.add_argument(
-        "-width",
-        type=int,
-        default=28,
-        help="Width of the generated images",
-    )
-    parser.add_argument(
-        "-height",
-        type=int,
-        default=28,
-        help="Height of the generated images",
-    )
-    parser.add_argument(
-        "-num_samples",
-        type=int,
-        default=1,
-        help="Number of images to generate",
-    )
-    parser.add_argument(
         "-output_path",
         type=str,
         default="",
@@ -65,32 +42,32 @@ def main():
     args = parse_args()
 
     assert os.path.isfile(args.model), f"Could not find model file '{args.model}': does not exist."
-
     if args.output_path:
         os.makedirs(args.output_path, exist_ok=True)
+
     device = torch.device(args.device)
 
-    generator = Generator(
-        noise_dim=args.noise_dim,
-        num_channels=args.num_channels,
-        width=args.width,
-        height=args.height,
-    ).to(device)
+    generator = Generator(noise_dim=args.noise_dim + 10).to(device)
     generator.load_state_dict(torch.load(args.model, map_location=device))
     generator.eval()
 
     with torch.no_grad():
-        noise = torch.randn(args.num_samples, args.noise_dim, device=device)
-        fake_images = generator(noise)
+        digits = torch.arange(10)
+        labels = F.one_hot(digits, num_classes=10).float()
+        noise = torch.randn(10, args.noise_dim)
+        conditional_input = torch.cat((noise, labels), dim=1)
+        conditional_input = conditional_input.to(device)
+
+        fake_images = generator(conditional_input).cpu()
 
         # Save as grid
         output_path = args.output_path or "outputs"
         os.makedirs(output_path, exist_ok=True)
         img_path = os.path.join(output_path, "samples.png")
 
-        # save_image handles [-1,1] to [0,1] normalization
-        save_image(fake_images, img_path, nrow=4, normalize=True, value_range=(-1, 1))
-        print(f"Saved {args.num_samples} samples to '{img_path}'")
+        # save_image handles [-1,1] to [0,1] normalization (2x5 grid)
+        save_image(fake_images, img_path, nrow=5, normalize=True, value_range=(-1, 1))
+        print(f"Saved {len(fake_images)} samples to '{img_path}'")
 
 
 if __name__ == "__main__":

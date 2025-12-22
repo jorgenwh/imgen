@@ -15,24 +15,6 @@ def parse_args() -> argparse.Namespace:
         help="Dimensionality of the noise vector input to the generator",
     )
     parser.add_argument(
-        "-num_channels",
-        type=int,
-        default=1,
-        help="Number of channels in the generated images (1 for grayscale, 3 for RGB)",
-    )
-    parser.add_argument(
-        "-width",
-        type=int,
-        default=28,
-        help="Width of the generated images",
-    )
-    parser.add_argument(
-        "-height",
-        type=int,
-        default=28,
-        help="Height of the generated images",
-    )
-    parser.add_argument(
         "-learning_rate",
         type=float,
         default=0.0002,
@@ -72,9 +54,6 @@ def main():
 
     train_gan(
         noise_dim=args.noise_dim,
-        num_channels=args.num_channels,
-        width=args.width,
-        height=args.height,
         learning_rate=args.learning_rate,
         epochs=args.epochs,
         batch_size=args.batch_size,
