@@ -46,6 +46,11 @@ else
 fi
 
 echo ""
+echo "=== Cleanup ==="
+echo "  Removing zip files..."
+rm -f *.zip
+
+echo ""
 echo "=== Summary ==="
 echo "  train2017: $(ls train2017 | wc -l) images"
 echo "  val2017: $(ls val2017 | wc -l) images"
