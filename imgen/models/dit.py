@@ -141,9 +141,9 @@ class DiTBlock(nn.Module):
 
 class DiT(nn.Module):
     """
-    Diffusion Transformer for MNIST.
+    Diffusion Transformer.
 
-    Takes a noisy image, timestep, and text label (digit 0-9),
+    Takes a noisy image, timestep, and token sequence,
     predicts the noise.
     """
 
@@ -173,8 +173,8 @@ class DiT(nn.Module):
             nn.Linear(embed_dim, embed_dim),
         )
 
-        # Text embedding (digit 0-9 -> embedding)
-        self.text_embed = nn.Embedding(vocab_size, embed_dim)
+        # Token embedding
+        self.token_embed = nn.Embedding(vocab_size, embed_dim)
 
         # Transformer blocks
         self.blocks = nn.ModuleList([
@@ -184,15 +184,14 @@ class DiT(nn.Module):
         self.norm = nn.LayerNorm(embed_dim)
         self.unpatchify = Unpatchify(img_size, patch_size, in_channels, embed_dim)
 
-        # Initialize positional embedding
         nn.init.normal_(self.pos_embed, std=0.02)
 
-    def forward(self, x: torch.Tensor, t: torch.Tensor, label: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, t: torch.Tensor, tokens: torch.Tensor) -> torch.Tensor:
         """
         Args:
             x: Noisy images [B, C, H, W]
             t: Timesteps [B]
-            label: Class labels [B] (digits 0-9)
+            tokens: Token indices [B, seq_len] or [B] for single token
 
         Returns:
             Predicted noise [B, C, H, W]
@@ -203,10 +202,12 @@ class DiT(nn.Module):
 
         # Embed timestep and add to patches
         t_emb = self.time_embed(t)  # [B, embed_dim]
-        x = x + t_emb.unsqueeze(1)  # broadcast to all patches
+        x = x + t_emb.unsqueeze(1)
 
-        # Embed text label as conditioning
-        context = self.text_embed(label).unsqueeze(1)  # [B, 1, embed_dim]
+        # Embed tokens as conditioning context
+        if tokens.dim() == 1:
+            tokens = tokens.unsqueeze(1)  # [B] -> [B, 1]
+        context = self.token_embed(tokens)  # [B, seq_len, embed_dim]
 
         # Transformer blocks
         for block in self.blocks:
@@ -214,5 +215,4 @@ class DiT(nn.Module):
 
         x = self.norm(x)
 
-        # Reconstruct image
         return self.unpatchify(x)

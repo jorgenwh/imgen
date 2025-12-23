@@ -2,7 +2,7 @@ import os
 import torch
 import argparse
 
-from imgen.data.datasets import get_mnist_dataloader, get_coco_dataloader
+from imgen.data.datasets import get_mnist_dataloader, get_coco_dataloader, CharTokenizer
 from imgen.training.diffusion import train_dit
 
 
@@ -77,8 +77,14 @@ def main():
         embed_dim = 512
         num_heads = 8
         num_layers = 12
-        vocab_size = 30522  # Using BERT's vocab size as an example
-        dataloader = get_coco_dataloader(batch_size=args.batch_size)
+        tokenizer = CharTokenizer(max_len=128)
+        vocab_size = tokenizer.vocab_size
+        dataloader = get_coco_dataloader(
+            batch_size=args.batch_size,
+            img_size=img_size,
+            tokenizer=tokenizer,
+            data_dir="./data/coco",
+        )
     else:
         raise ValueError(f"Unsupported experiment: {args.experiment}")
 
