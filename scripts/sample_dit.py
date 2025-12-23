@@ -61,6 +61,7 @@ def main():
 
     # Configure based on experiment
     if args.experiment == "mnist":
+        assert len(args.prompt) == 1 and args.prompt in "0123456789", f"MNIST prompt must be a single digit 0-9, got '{args.prompt}'"
         img_size, patch_size, in_channels = 28, 4, 1
         embed_dim, num_heads, num_layers = 256, 4, 6
         vocab_size = 10
