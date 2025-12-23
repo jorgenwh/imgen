@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from imgen.data.datasets import get_mnist_dataloader
 from imgen.models.dit import DiT
 
 
@@ -11,7 +10,6 @@ class NoiseSchedule:
     Linear noise schedule for diffusion.
     Uses the "alpha" and "alpha_bar" parameterization from DDPM paper.
     """
-
     def __init__(self, timesteps: int = 1000, beta_start: float = 0.0001, beta_end: float = 0.02):
         self.timesteps = timesteps
         self.betas = torch.linspace(beta_start, beta_end, timesteps)
@@ -26,26 +24,32 @@ class NoiseSchedule:
 
 
 def train_dit(
+    img_size: int,
+    patch_size: int,
+    in_channels: int,
+    embed_dim: int,
+    num_heads: int,
+    num_layers: int,
+    vocab_size: int,
     timesteps: int,
     learning_rate: float,
     epochs: int,
-    batch_size: int,
     device: torch.device,
+    dataloader: torch.utils.data.DataLoader,
     output_dir: str,
 ):
-    dataloader = get_mnist_dataloader(batch_size=batch_size, data_dir="./data")
-
     model = DiT(
-        img_size=28,
-        patch_size=4,
-        in_channels=1,
-        embed_dim=256,
-        num_heads=4,
-        num_layers=6,
-        vocab_size=10,
+        img_size=img_size,
+        patch_size=patch_size,
+        in_channels=in_channels,
+        embed_dim=embed_dim,
+        num_heads=num_heads,
+        num_layers=num_layers,
+        vocab_size=vocab_size,
     ).to(device)
 
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
+    print(f"Device: {device}")
 
     noise_schedule = NoiseSchedule(timesteps=timesteps).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)

@@ -2,6 +2,7 @@ import os
 import torch
 import argparse
 
+from imgen.data.datasets import get_mnist_dataloader, get_coco_dataloader
 from imgen.training.diffusion import train_dit
 
 
@@ -44,6 +45,12 @@ def parse_args() -> argparse.Namespace:
         default="./models",
         help="Directory to save model checkpoints",
     )
+    parser.add_argument(
+        "-experiment",
+        type=str,
+        default="mnist",
+        help="Which experiment to run (mnist, coco)",
+    )
 
     return parser.parse_args()
 
@@ -52,11 +59,41 @@ def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
+    if args.experiment == "mnist":
+        print("Starting DiT training on MNIST")
+        img_size = 28
+        patch_size = 4
+        in_channels = 1
+        embed_dim = 256
+        num_heads = 4
+        num_layers = 6
+        vocab_size = 10
+        dataloader = get_mnist_dataloader(batch_size=args.batch_size, data_dir="./data")
+    elif args.experiment == "coco":
+        print("Starting DiT training on COCO")
+        img_size = 64
+        patch_size = 8
+        in_channels = 3
+        embed_dim = 512
+        num_heads = 8
+        num_layers = 12
+        vocab_size = 30522  # Using BERT's vocab size as an example
+        dataloader = get_coco_dataloader(batch_size=args.batch_size)
+    else:
+        raise ValueError(f"Unsupported experiment: {args.experiment}")
+
     train_dit(
+        img_size=img_size,
+        patch_size=patch_size,
+        in_channels=in_channels,
+        embed_dim=embed_dim,
+        num_heads=num_heads,
+        num_layers=num_layers,
+        vocab_size=vocab_size,
+        dataloader=dataloader,
         timesteps=args.timesteps,
         learning_rate=args.learning_rate,
         epochs=args.epochs,
-        batch_size=args.batch_size,
         device=torch.device(args.device),
         output_dir=args.output_dir,
     )
