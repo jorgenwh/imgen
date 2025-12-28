@@ -160,8 +160,6 @@ def train_dit(
 
             bar.unit = f"Loss: {total_loss / num_batches:.4f}"
 
-            break
-
         torch.save(model.state_dict(), f"{output_dir}/dit_epoch_{epoch + 1}.pth")
 
         # Generate sample images for this epoch
