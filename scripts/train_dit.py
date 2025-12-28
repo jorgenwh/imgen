@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "-batch_size",
         type=int,
-        default=256,
+        default=32,
         help="Batch size for training",
     )
     parser.add_argument(
@@ -59,6 +59,8 @@ def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
+    tokenizer = None
+
     if args.experiment == "mnist":
         print("Starting DiT training on MNIST")
         img_size = 28
@@ -74,9 +76,9 @@ def main():
         img_size = 128
         patch_size = 8
         in_channels = 3
-        embed_dim = 1024
-        num_heads = 16
-        num_layers = 24
+        embed_dim = 512
+        num_heads = 8
+        num_layers = 18
         tokenizer = CharTokenizer(max_len=128)
         vocab_size = tokenizer.vocab_size
         dataloader = get_coco_dataloader(
@@ -102,6 +104,7 @@ def main():
         epochs=args.epochs,
         device=torch.device(args.device),
         output_dir=args.output_dir,
+        tokenizer=tokenizer,
     )
 
 

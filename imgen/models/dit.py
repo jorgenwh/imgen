@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import math
 
 
@@ -68,7 +69,6 @@ class CrossAttention(nn.Module):
         super().__init__()
         self.num_heads = num_heads
         self.head_dim = embed_dim // num_heads
-        self.scale = self.head_dim ** -0.5
 
         self.q_proj = nn.Linear(embed_dim, embed_dim)
         self.k_proj = nn.Linear(embed_dim, embed_dim)
@@ -85,10 +85,10 @@ class CrossAttention(nn.Module):
         k = self.k_proj(context).reshape(B, M, self.num_heads, self.head_dim).transpose(1, 2)
         v = self.v_proj(context).reshape(B, M, self.num_heads, self.head_dim).transpose(1, 2)
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
+        # Uses Flash Attention when available (PyTorch 2.0+, CUDA)
+        out = F.scaled_dot_product_attention(q, k, v)
 
-        out = (attn @ v).transpose(1, 2).reshape(B, N, D)
+        out = out.transpose(1, 2).reshape(B, N, D)
         return self.out_proj(out)
 
 
