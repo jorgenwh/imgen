@@ -71,12 +71,12 @@ def main():
         dataloader = get_mnist_dataloader(batch_size=args.batch_size, data_dir="./data")
     elif args.experiment == "coco":
         print("Starting DiT training on COCO")
-        img_size = 64
+        img_size = 128
         patch_size = 8
         in_channels = 3
-        embed_dim = 512
-        num_heads = 8
-        num_layers = 12
+        embed_dim = 1024
+        num_heads = 16
+        num_layers = 24
         tokenizer = CharTokenizer(max_len=128)
         vocab_size = tokenizer.vocab_size
         dataloader = get_coco_dataloader(

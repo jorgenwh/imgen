@@ -68,8 +68,8 @@ def main():
         tokens = torch.tensor([int(args.prompt)], device=device)
         output_name = f"dit_digit_{args.prompt}_progression.png"
     elif args.experiment == "coco":
-        img_size, patch_size, in_channels = 64, 8, 3
-        embed_dim, num_heads, num_layers = 512, 8, 12
+        img_size, patch_size, in_channels = 128, 8, 3
+        embed_dim, num_heads, num_layers = 1024, 16, 24
         tokenizer = CharTokenizer(max_len=128)
         vocab_size = tokenizer.vocab_size
         tokens = torch.tensor([tokenizer.encode(args.prompt)], device=device)  # [1, 128]
